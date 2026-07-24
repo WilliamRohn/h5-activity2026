@@ -147,50 +147,86 @@
   grid-template-columns: repeat(var(--puzzle-columns), 1fr);
   grid-template-rows: repeat(var(--puzzle-rows), 1fr);
   aspect-ratio: 1 / 1;
-  padding: 0.035rem;
-  gap: 0.025rem;
+  gap: 0;
   overflow: hidden;
+  border: 0.035rem solid #c9cbc5;
   border-radius: 0.14rem;
   background: #cdcfc9;
   box-shadow: inset 0 0 0 1px rgba(37, 52, 48, 0.08);
+  container-type: size;
 }
 
 .puzzle-piece {
   position: relative;
+  z-index: var(--piece-layer);
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
-  border-radius: 0.025rem;
-  background-repeat: no-repeat;
-  background-size: calc(var(--puzzle-columns) * 100%) calc(var(--puzzle-rows) * 100%);
-  filter: grayscale(1) brightness(0.72) contrast(0.92);
-  transition: filter 0.55s ease, transform 0.4s ease, box-shadow 0.4s ease;
+  overflow: visible;
+  isolation: isolate;
+  transition: transform 0.4s ease;
 }
 
-.puzzle-piece::after {
+.piece-surface,
+.piece-tab {
   position: absolute;
+  background-image: var(--piece-image);
+  background-repeat: no-repeat;
+  background-size: 100cqw 100cqh;
+  filter: grayscale(1) brightness(0.72) contrast(0.92);
+  transition: filter 0.55s ease, box-shadow 0.4s ease;
+}
+
+.piece-surface {
   inset: 0;
-  content: "";
-  background: rgba(31, 41, 38, 0.16);
-  transition: opacity 0.45s ease;
+  z-index: 2;
+  background-position: var(--piece-bg-x) var(--piece-bg-y);
+  box-shadow: inset 0 0 0 0.006rem rgba(248, 248, 242, 0.68);
+}
+
+.piece-tab {
+  z-index: 1;
+  width: 38%;
+  height: 38%;
+  border-radius: 50%;
+  background-position: var(--tab-bg-x) var(--tab-bg-y);
+  box-shadow: 0 0 0 0.006rem rgba(248, 248, 242, 0.68);
+}
+
+.piece-tab--left {
+  top: 31%;
+  left: -19%;
+}
+
+.piece-tab--right {
+  top: 31%;
+  left: 81%;
+}
+
+.piece-tab--top {
+  top: -19%;
+  left: 31%;
+}
+
+.piece-tab--bottom {
+  top: 81%;
+  left: 31%;
 }
 
 .puzzle-piece--acquired {
-  z-index: 1;
-  filter: none;
   animation: reveal-piece 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 0 0 0.02rem rgba(255, 255, 255, 0.7);
 }
 
-.puzzle-piece--acquired::after {
-  opacity: 0;
+.puzzle-piece--acquired .piece-surface,
+.puzzle-piece--acquired .piece-tab {
+  filter: none;
+  box-shadow: inset 0 0 0 0.008rem rgba(255, 255, 255, 0.82);
 }
 
 .piece-dot {
   position: absolute;
   top: 50%;
   left: 50%;
-  z-index: 2;
+  z-index: 3;
   width: 0.045rem;
   height: 0.045rem;
   border: 1px solid rgba(255, 255, 255, 0.65);
@@ -282,14 +318,12 @@
 
 @keyframes reveal-piece {
   0% {
-    filter: grayscale(1) brightness(0.72);
     transform: scale(0.82) rotate(-3deg);
   }
   60% {
     transform: scale(1.08) rotate(1deg);
   }
   100% {
-    filter: none;
     transform: scale(1) rotate(0);
   }
 }
@@ -318,6 +352,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .puzzle-piece,
+  .piece-surface,
+  .piece-tab,
   .puzzle-piece--acquired {
     transition: none;
     animation: none;
