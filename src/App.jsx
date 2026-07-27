@@ -9,34 +9,9 @@ const ALL_PIECES = Array.from(
   (_, index) => index,
 )
 
-const TAB_SIZE = 0.38
-const TAB_START = (1 - TAB_SIZE) / 2
-const TAB_OVERHANG = TAB_SIZE / 2
-
-const getTabDirections = (row, column) => {
-  if ((row + column) % 2 !== 0) return []
-
-  return [
-    column > 0 && 'left',
-    column < PUZZLE_CONFIG.columns - 1 && 'right',
-    row > 0 && 'top',
-    row < PUZZLE_CONFIG.rows - 1 && 'bottom',
-  ].filter(Boolean)
-}
-
-const getTabStyle = (direction, row, column) => {
-  const positions = {
-    left: [-TAB_OVERHANG, TAB_START],
-    right: [1 - TAB_OVERHANG, TAB_START],
-    top: [TAB_START, -TAB_OVERHANG],
-    bottom: [TAB_START, 1 - TAB_OVERHANG],
-  }
-  const [localX, localY] = positions[direction]
-
-  return {
-    '--tab-bg-x': `${-((column + localX) / PUZZLE_CONFIG.columns) * 100}cqw`,
-    '--tab-bg-y': `${-((row + localY) / PUZZLE_CONFIG.rows) * 100}cqh`,
-  }
+const getBackgroundOffset = (position, count) => {
+  if (count <= 1) return '50%'
+  return `${(position / (count - 1)) * 100}%`
 }
 
 function PuzzleBoard({ acquiredPieces }) {
@@ -55,29 +30,17 @@ function PuzzleBoard({ acquiredPieces }) {
         const column = pieceIndex % PUZZLE_CONFIG.columns
         const row = Math.floor(pieceIndex / PUZZLE_CONFIG.columns)
         const isAcquired = acquiredSet.has(pieceIndex)
-        const tabDirections = getTabDirections(row, column)
 
         return (
           <div
             className={`puzzle-piece${isAcquired ? ' puzzle-piece--acquired' : ''}`}
             key={pieceIndex}
             style={{
-              '--piece-layer': (row + column) % 2 === 0 ? 2 : 1,
-              '--piece-image': `url(${PUZZLE_CONFIG.imageUrl})`,
-              '--piece-bg-x': `${-(column / PUZZLE_CONFIG.columns) * 100}cqw`,
-              '--piece-bg-y': `${-(row / PUZZLE_CONFIG.rows) * 100}cqh`,
+              backgroundImage: `url(${PUZZLE_CONFIG.imageUrl})`,
+              backgroundPosition: `${getBackgroundOffset(column, PUZZLE_CONFIG.columns)} ${getBackgroundOffset(row, PUZZLE_CONFIG.rows)}`,
             }}
             aria-label={`拼图第 ${pieceIndex + 1} 块，${isAcquired ? '已获得' : '未获得'}`}
           >
-            {tabDirections.map((direction) => (
-              <span
-                aria-hidden="true"
-                className={`piece-tab piece-tab--${direction}`}
-                key={direction}
-                style={getTabStyle(direction, row, column)}
-              />
-            ))}
-            <span aria-hidden="true" className="piece-surface" />
             {!isAcquired && <span className="piece-dot" />}
           </div>
         )
