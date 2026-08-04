@@ -1,72 +1,29 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Button, ProgressBar, Toast } from 'antd-mobile'
-import { sample } from 'lodash-es'
+import PuzzleViewport from './components/PuzzleViewport'
 import { PUZZLE_CONFIG } from './config/puzzle'
+import { usePuzzleProgress } from './hooks/usePuzzleProgress'
 import './styles/app.css'
 
-const ALL_PIECES = Array.from(
-  { length: PUZZLE_CONFIG.columns * PUZZLE_CONFIG.rows },
-  (_, index) => index,
-)
-
-const getBackgroundOffset = (position, count) => {
-  if (count <= 1) return '50%'
-  return `${(position / (count - 1)) * 100}%`
-}
-
-function PuzzleBoard({ acquiredPieces }) {
-  const acquiredSet = useMemo(() => new Set(acquiredPieces), [acquiredPieces])
-
-  return (
-    <div
-      className="puzzle-board"
-      style={{
-        '--puzzle-columns': PUZZLE_CONFIG.columns,
-        '--puzzle-rows': PUZZLE_CONFIG.rows,
-      }}
-      aria-label={`共 ${ALL_PIECES.length} 块的活动拼图`}
-    >
-      {ALL_PIECES.map((pieceIndex) => {
-        const column = pieceIndex % PUZZLE_CONFIG.columns
-        const row = Math.floor(pieceIndex / PUZZLE_CONFIG.columns)
-        const isAcquired = acquiredSet.has(pieceIndex)
-
-        return (
-          <div
-            className={`puzzle-piece${isAcquired ? ' puzzle-piece--acquired' : ''}`}
-            key={pieceIndex}
-            style={{
-              backgroundImage: `url(${PUZZLE_CONFIG.imageUrl})`,
-              backgroundPosition: `${getBackgroundOffset(column, PUZZLE_CONFIG.columns)} ${getBackgroundOffset(row, PUZZLE_CONFIG.rows)}`,
-            }}
-            aria-label={`拼图第 ${pieceIndex + 1} 块，${isAcquired ? '已获得' : '未获得'}`}
-          >
-            {!isAcquired && <span className="piece-dot" />}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 function App() {
-  const [acquiredPieces, setAcquiredPieces] = useState([])
-  const total = ALL_PIECES.length
-  const completed = acquiredPieces.length
+  const total = PUZZLE_CONFIG.columns * PUZZLE_CONFIG.rows
+  const { acquirePiece, completed, pieceOrder } = usePuzzleProgress(total)
+  const [recentPiece, setRecentPiece] = useState(null)
   const progress = (completed / total) * 100
   const isComplete = completed === total
+  const displayProgress = completed > 0 && progress < 1
+    ? progress.toFixed(2)
+    : Math.round(progress)
 
-  const acquirePiece = () => {
-    const acquiredSet = new Set(acquiredPieces)
-    const remainingPieces = ALL_PIECES.filter((piece) => !acquiredSet.has(piece))
-    const nextPiece = sample(remainingPieces)
+  const handleAcquirePiece = () => {
+    const nextPiece = acquirePiece()
 
     if (nextPiece === undefined) {
       Toast.show({ content: '拼图已经全部点亮啦' })
       return
     }
 
-    setAcquiredPieces((current) => [...current, nextPiece])
+    setRecentPiece(nextPiece)
     Toast.show({
       icon: 'success',
       content: `成功点亮第 ${nextPiece + 1} 块拼图`,
@@ -75,61 +32,69 @@ function App() {
 
   return (
     <main className="page-shell">
-      <div className="ambient ambient--one" />
-      <div className="ambient ambient--two" />
-
-      <header className="hero-header">
-        <div className="brand-mark" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-        <p className="eyebrow">SUMMER COLLECTION · 2026</p>
-        <h1>拾光拼图</h1>
-        <p className="subtitle">每一次点亮，都是夏天留下的一小块回忆</p>
-      </header>
-
-      <section className="puzzle-card">
-        <div className="card-heading">
+      <div className="page-frame" aria-hidden="true" />
+      <div className="page-content">
+        <header className="hero-header">
           <div>
-            <span className="section-number">01</span>
-            <span className="section-title">我的夏日画卷</span>
+            <p className="eyebrow">CAMPUS MEMORY · 2026</p>
+            <h1>拾光拼图</h1>
+            <p className="subtitle">每一次点亮，都是校园时光的一小块回忆</p>
           </div>
-          <span className="piece-count">
-            <strong>{completed}</strong> / {total}
-          </span>
-        </div>
+          <div className="header-progress" aria-label={`已完成 ${completed} 块，共 ${total} 块`}>
+            <strong>{completed.toLocaleString('zh-CN')}</strong>
+            <span>/ {total.toLocaleString('zh-CN')}</span>
+          </div>
+        </header>
 
-        <PuzzleBoard acquiredPieces={acquiredPieces} />
+        <section className="puzzle-card">
+          <div className="card-heading">
+            <div>
+              <span className="section-number">01</span>
+              <span className="section-title">我的校园画卷</span>
+            </div>
+            <span className="gesture-hint">双指缩放 · 拖动查看</span>
+          </div>
 
-        <div className="progress-row">
-          <ProgressBar
-            percent={progress}
-            style={{ '--fill-color': '#ee6a45', '--track-color': '#e9e5dc', '--track-width': '0.06rem' }}
+          <PuzzleViewport
+            columns={PUZZLE_CONFIG.columns}
+            rows={PUZZLE_CONFIG.rows}
+            imageUrl={PUZZLE_CONFIG.imageUrl}
+            resolution={PUZZLE_CONFIG.canvasResolution}
+            minScale={PUZZLE_CONFIG.minScale}
+            maxScale={PUZZLE_CONFIG.maxScale}
+            pieceOrder={pieceOrder}
+            revealedCount={completed}
+            recentPiece={recentPiece}
           />
-          <span>{Math.round(progress)}%</span>
+
+          <div className="progress-row">
+            <ProgressBar
+              percent={progress}
+              style={{ '--fill-color': '#f2b923', '--track-color': '#eee6c9', '--track-width': '0.06rem' }}
+            />
+            <span>{displayProgress}%</span>
+          </div>
+        </section>
+
+        <div className="hint-row">
+          <i />
+          <span>{isComplete ? '整幅画卷已被你点亮' : `还有 ${(total - completed).toLocaleString('zh-CN')} 块拼图等待点亮`}</span>
+          <i />
         </div>
-      </section>
 
-      <div className="hint-row">
-        <i />
-        <span>{isComplete ? '整幅画卷已被你点亮' : `还有 ${total - completed} 块拼图等待点亮`}</span>
-        <i />
-      </div>
-
-      <div className="action-area">
-        <Button
-          block
-          className="acquire-button"
-          disabled={isComplete}
-          onClick={acquirePiece}
-        >
-          <span className="button-spark">✦</span>
-          {isComplete ? '已完成全部拼图' : '获取一块拼图'}
-          <span className="button-arrow">→</span>
-        </Button>
-        <p>每次获取的拼图不会重复</p>
+        <div className="action-area">
+          <Button
+            block
+            className="acquire-button"
+            disabled={isComplete}
+            onClick={handleAcquirePiece}
+          >
+            <span className="button-spark">✦</span>
+            {isComplete ? '已完成全部拼图' : '获取一块拼图'}
+            <span className="button-arrow">→</span>
+          </Button>
+          <p>万级拼图由画布增量绘制，每次获取均不会重复</p>
+        </div>
       </div>
     </main>
   )
