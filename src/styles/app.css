@@ -147,8 +147,11 @@
 }
 
 .gesture-hint {
+  max-width: 1.28rem;
   color: #a3864d;
   font-size: 0.085rem;
+  line-height: 1.45;
+  text-align: right;
 }
 
 .puzzle-explorer {
@@ -157,14 +160,14 @@
 
 .puzzle-viewport {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: var(--puzzle-aspect-ratio);
   overflow: hidden;
   border: 0.025rem solid #f3c31c;
   background: #e6e5df;
   box-shadow:
     inset 0 0 0 0.01rem rgba(255, 255, 255, 0.85),
     0 0.08rem 0.22rem rgba(138, 96, 0, 0.18);
-  cursor: grab;
+  cursor: crosshair;
   touch-action: none;
   user-select: none;
 }
@@ -191,6 +194,10 @@
   height: 100%;
 }
 
+.puzzle-surface--optimized {
+  overflow: hidden;
+}
+
 .puzzle-canvas {
   display: block;
 }
@@ -206,16 +213,24 @@
     100% calc(100% / var(--puzzle-rows));
 }
 
-.piece-reveal-flash {
+.piece-change-flash {
   position: absolute;
   z-index: 3;
   top: calc(var(--piece-row) * 100% / var(--puzzle-rows));
   left: calc(var(--piece-column) * 100% / var(--puzzle-columns));
   width: calc(100% / var(--puzzle-columns));
   height: calc(100% / var(--puzzle-rows));
-  border: 0.01rem solid rgba(255, 219, 71, 0.9);
   pointer-events: none;
+}
+
+.piece-change-flash--acquired {
+  border: 0.01rem solid rgba(255, 219, 71, 0.9);
   animation: reveal-piece 0.7s ease-out both;
+}
+
+.piece-change-flash--released {
+  border: 0.01rem solid rgba(116, 126, 122, 0.82);
+  animation: release-piece 0.45s ease-out both;
 }
 
 .puzzle-loading {
@@ -255,7 +270,7 @@
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: var(--puzzle-aspect-ratio);
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -400,6 +415,19 @@
   }
 }
 
+@keyframes release-piece {
+  0% {
+    opacity: 1;
+    transform: scale(1.8);
+    box-shadow: 0 0 0 0.02rem rgba(116, 126, 122, 0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.65);
+    box-shadow: 0 0 0 0.005rem rgba(116, 126, 122, 0);
+  }
+}
+
 @media (max-width: 350px) {
   .page-shell {
     padding-right: 0.11rem;
@@ -435,7 +463,7 @@
     will-change: auto;
   }
 
-  .piece-reveal-flash {
+  .piece-change-flash {
     display: none;
     animation: none;
   }
